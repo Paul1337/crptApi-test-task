@@ -62,8 +62,8 @@ public class CrptApi {
     private TimeUnit timeUnit;
     private int requestLimit;
 
-    private AtomicReference<Instant> firstRequestWithinInterval = new AtomicReference<>(null);
-    private AtomicInteger requestsCount = new AtomicInteger(0);
+    private volatile Instant firstRequestWithinInterval = null;
+    private int requestsCount = 0;
 
     private final String authToken = System.getenv("CRPT_API_AUTH");
 
@@ -74,15 +74,15 @@ public class CrptApi {
 
     public UUID createDocument(Document document, String signature) throws IOException, InterruptedException {
         synchronized (this) {
-            if (firstRequestWithinInterval.get() == null) firstRequestWithinInterval.set(Instant.now());
-            if (Duration.between(firstRequestWithinInterval.get(), Instant.now()).toNanos() < timeUnit.toNanos(1)) {
-                if (requestsCount.incrementAndGet() >= requestLimit) {
-                    Duration timeUntilNewInterval = Duration.between(Instant.now(), firstRequestWithinInterval.get().plusNanos(timeUnit.toNanos(1)));
+            if (firstRequestWithinInterval == null) firstRequestWithinInterval = Instant.now();
+            if (Duration.between(firstRequestWithinInterval, Instant.now()).toNanos() < timeUnit.toNanos(1)) {
+                if (++requestsCount >= requestLimit) {
+                    Duration timeUntilNewInterval = Duration.between(Instant.now(), firstRequestWithinInterval.plusNanos(timeUnit.toNanos(1)));
                     Thread.sleep(timeUntilNewInterval);
                 }
             } else {
-                firstRequestWithinInterval.set(Instant.now());
-                requestsCount.set(0);
+                firstRequestWithinInterval = Instant.now();
+                requestsCount = 0;
             }
         }
 
