@@ -1,5 +1,6 @@
 package org.example;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -12,7 +13,7 @@ public class Main {
             var document = new Document("format", "content", "group", "type");
             var uuid = apiInstance.createDocument(document, "signature");
             System.out.printf("Success, uuid = %s\n", uuid.toString());
-        } catch (Exception exception) {
+        } catch (CreateDocumentException | IOException | InterruptedException exception) {
             System.out.println(exception.getMessage());
         }
     }
